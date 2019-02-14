@@ -10,7 +10,7 @@ var remove      = require('remove');
 var touch       = require('touch');
 
 var fakeFile = '';
-before(function(){
+beforeEach(function(){
 //  remove.removeSync(__dirname + '/data');
   fakeFile = generateFakeFile('fake1');
 });
@@ -219,7 +219,7 @@ describe('inotifywait', function () {
     });
   });
 
-  it('should detect 500 files change when they are touched @14', function (done) {
+  it.skip('should detect 500 files change when they are touched @14', function (done) { //test pass but too many logged lines
     
     // create the 100 files
     remove.removeSync(__dirname + '/data');
@@ -248,7 +248,7 @@ describe('inotifywait', function () {
       });
     });
   });
-  it('should detect when a folder is removed @14', function (done) {
+  it('should detect when a folder is removed @15', function (done) {
     var d = __dirname + '/data/lol';
     var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
     w.on('unlink', function (name, stats) {
@@ -264,9 +264,49 @@ describe('inotifywait', function () {
       }, 10);
     });
   })
+  it('should detect when a file is renamed @16', function (done) {
+    var w = new INotifyWait(__dirname + '/data');
+    const fakeFile2 = __dirname + '/data/fake2'
+    w.on('move', function (nameFrom, nameTo, stats) {
+      expect(nameFrom).to.eql(fakeFile);
+      expect(nameTo).to.eql(fakeFile2);
+      expect(stats.isDir).to.eql(false);      
+      w.close();
+      done();
+    });
+    w.on('ready', function () {
+    	fs.renameSync(fakeFile, fakeFile2)
+    });
+  })
+  /*
+  it('should detect when a file is moved @17', function (done) { //TODO
+  })
+  it('should detect when a directory is renamed @18', function (done) { //TODO
+  })
+  it('should detect when a directory is moved @19', function (done) { //TODO
+  })
+  
+  it('should detect when date attributes of a file was changed  @20', function (done) { //TODO
+  })
+  it('should detect when mode attributes of a file was changed  @21', function (done) { //TODO
+  })
+  it('should detect when owner of a file was changed  @22', function (done) { //TODO
+  })
+  it('should detect when group of a file was changed  @23', function (done) { //TODO
+  })
+  
+  it('should detect when date attributes of a directory was changed  @20', function (done) { //TODO
+  })
+  it('should detect when mode attributes of a directory was changed  @21', function (done) { //TODO
+  })
+  it('should detect when owner of a file was directory  @22', function (done) { //TODO
+  })
+  it('should detect when group of a file was directory  @23', function (done) { //TODO
+  })
+  */
 });
 
-after(function(){
+afterEach(function(){
   remove.removeSync(__dirname + '/data');
 });
 
