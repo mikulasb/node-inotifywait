@@ -255,6 +255,7 @@ describe('inotifywait', function () {
     w.on('attributes', function (name) { //newly prefered way is to emmit 'attributes' instead of 'change'
       nbNotify++;
       if (nbNotify == 500) {
+        w.close();
         done();
       }
     });
@@ -282,6 +283,7 @@ describe('inotifywait', function () {
     w.on('change', function (name) { //for backward compatibility is emitted 'change' instead of 'attributes'
       nbNotify++;
       if (nbNotify == 500) {
+        w.close();
         done();
       }
     });
