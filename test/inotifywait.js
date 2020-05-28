@@ -202,15 +202,32 @@ describe('inotifywait', function () {
     });
   });
 
-  it('should detect when a new hardlink is touched @13', function (done) {
+  it('should detect when a new hardlink is touched @13a', function (done) {
     var f_id  = uuid.v1();
     var f_src = '/tmp/' + f_id;
     var f_dst = __dirname + '/data/' + f_id;
     //    console.log(f_dst);
     fs.writeFileSync(f_src, 'fake data'); // create the file source
     fs.linkSync(f_src, f_dst);            // create the hard link
-    var w = new INotifyWait(__dirname + '/data');
-    w.on('attributes', function (name) { //changed from 'change' to 'attributes'
+    var w = new INotifyWait(__dirname + '/data', { touchGeneratesAttributes: true }); // newly is necessary to change default options
+    w.on('attributes', function (name) { //newly prefered way is to emmit 'attributes' instead of 'change'
+      expect(name).to.eql(f_dst);
+      w.close();
+      done();
+    });
+    w.on('ready', function () {
+      touch.sync(f_dst); // touch the hard link
+    });
+  });
+  it('should detect when a new hardlink is touched @13b', function (done) {
+    var f_id  = uuid.v1();
+    var f_src = '/tmp/' + f_id;
+    var f_dst = __dirname + '/data/' + f_id;
+    //    console.log(f_dst);
+    fs.writeFileSync(f_src, 'fake data'); // create the file source
+    fs.linkSync(f_src, f_dst);            // create the hard link
+    var w = new INotifyWait(__dirname + '/data', /*{ touchGeneratesAttributes: false }*/); // default options for backward compatibility
+    w.on('change', function (name) { //for backward compatibility is emitted 'change' instead of 'attributes'
       expect(name).to.eql(f_dst);
       w.close();
       done();
@@ -220,9 +237,8 @@ describe('inotifywait', function () {
     });
   });
 
-  it('should detect 500 files change when they are touched @14', function (done) {
-
-    // create the 100 files
+  it('should detect 500 files change when they are touched @14a', function (done) {
+    // create the 500 files
     remove.removeSync(__dirname + '/data');
     var files = [];
     for (var i = 0; i < 500 ; i++) {
@@ -233,11 +249,10 @@ describe('inotifywait', function () {
       fs.writeFileSync(file, '.');
       files.push(file);
     }
-
     // run inotifywait
     var nbNotify = 0;
-    var w = new INotifyWait(__dirname + '/data');
-    w.on('attributes', function (name) { //changed from 'change' to 'attributes'
+    var w = new INotifyWait(__dirname + '/data', { touchGeneratesAttributes: true }); // newly is necessary to change default options
+    w.on('attributes', function (name) { //newly prefered way is to emmit 'attributes' instead of 'change'
       nbNotify++;
       if (nbNotify == 500) {
         done();
@@ -249,6 +264,34 @@ describe('inotifywait', function () {
       });
     });
   });
+  it('should detect 500 files change when they are touched @14b', function (done) {
+    // create the 500 files
+    remove.removeSync(__dirname + '/data');
+    var files = [];
+    for (var i = 0; i < 500 ; i++) {
+      var id  = uuid.v4();
+      var path = __dirname + '/data/' + id[0] + '/' + id[1] + '/' + id[2];
+      mkdirp.sync(path);
+      var file = path + '/' + id;
+      fs.writeFileSync(file, '.');
+      files.push(file);
+    }
+    // run inotifywait
+    var nbNotify = 0;
+    var w = new INotifyWait(__dirname + '/data', /*{ touchGeneratesAttributes: false }*/); // default options for backward compatibility
+    w.on('change', function (name) { //for backward compatibility is emitted 'change' instead of 'attributes'
+      nbNotify++;
+      if (nbNotify == 500) {
+        done();
+      }
+    });
+    w.on('ready', function () {
+      files.forEach(function (f) {
+        touch.sync(f);
+      });
+    });
+  });  
+  
   it('should detect when a folder is removed @15', function (done) {
     var d = __dirname + '/data/lol';
     var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
