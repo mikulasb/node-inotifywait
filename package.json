@@ -10,8 +10,8 @@
   "license": "MIT",
   "devDependencies": {
     "chai": "~3.5.0",
-    "mkdirp": "~0.5.1",
-    "mocha": "~3.1.2",
+    "mkdirp": "^1.0.4",
+    "mocha": "^7.2.0",
     "remove": "~0.1.5",
     "touch": "1.0.0",
     "userid": "^1.0.0-beta.6",
