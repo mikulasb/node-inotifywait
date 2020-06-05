@@ -518,11 +518,11 @@ describe('inotifywait', function () {
     });
   })
   it('should detect when a file is moved from outside to watched directory @29', function (done) {
-    const origFile = __dirname + '/data_outside/file'
+    const origOutsideFile = __dirname + '/data_outside/file'
     const outsideDir = __dirname + '/data_outside'
     const movedFile = __dirname + '/data/file'
     mkdirp.sync(outsideDir);
-    fs.writeFileSync(origFile, '.');
+    fs.writeFileSync(origOutsideFile, '.');
     var w = new INotifyWait(__dirname + '/data', /*{ watchDirectory: true }*/);
     w.on('add', function (name, stats) {
       expect(name).to.eql(movedFile);
@@ -532,13 +532,13 @@ describe('inotifywait', function () {
       done();
     });
     w.on('ready', function () {
-      fs.renameSync(origFile, movedFile)
+      fs.renameSync(origOutsideFile, movedFile)
     });
   })
   it('should detect when a directory is moved from watched directory to outside @30', function (done) {
     const origDir = __dirname + '/data/subdir'
     const outsideDir = __dirname + '/data_outside'
-    const movedDir = __dirname + '/data_outside/subdir'
+    const movedOutsideDir = __dirname + '/data_outside/subdir'
     mkdirp.sync(origDir);
     mkdirp.sync(outsideDir);
     var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
@@ -550,15 +550,15 @@ describe('inotifywait', function () {
       done();
     });
     w.on('ready', function () {
-      fs.renameSync(origDir, movedDir)
+      fs.renameSync(origDir, movedOutsideDir)
     });
   })
   it('should detect when a directory is moved from outside to watched directory @31', function (done) {
-    const origDir = __dirname + '/data_outside/subdir'
+    const origOutsideDir = __dirname + '/data_outside/subdir'
     const outsideDir = __dirname + '/data_outside'
     const movedDir = __dirname + '/data/subdir'
     mkdirp.sync(outsideDir);
-    mkdirp.sync(origDir);
+    mkdirp.sync(origOutsideDir);
     var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
     w.on('add', function (name, stats) {
       expect(name).to.eql(movedDir);
@@ -568,9 +568,106 @@ describe('inotifywait', function () {
       done();
     });
     w.on('ready', function () {
-      fs.renameSync(origDir, movedDir)
+      fs.renameSync(origOutsideDir, movedDir)
     });
   })
+
+  it('should detect when a file is moved from watched directory to outside and then back @32', function (done) {
+    const origFile = __dirname + '/data/file'
+    const outsideDir = __dirname + '/data_outside'
+    const movedOutsideFile = __dirname + '/data_outside/file'
+    mkdirp.sync(outsideDir);
+    fs.writeFileSync(origFile, '.');
+    var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
+    w.on('ready', function () {
+      fs.renameSync(origFile, movedOutsideFile)
+    });
+    w.on('unlink', function (name, stats) {
+      expect(name).to.eql(origFile);
+      expect(stats.isDir).to.eql(false);
+      fs.renameSync(movedOutsideFile, origFile);
+    });
+    w.on('add', function (name, stats) {
+      expect(name).to.eql(origFile);
+      expect(stats.isDir).to.eql(false);
+      w.close();
+      remove.removeSync(outsideDir);
+      done();
+    });
+  })
+  it('should detect when a file is moved from outside to watched directory and then back @33', function (done) {
+    const origOutsideFile = __dirname + '/data_outside/file'
+    const outsideDir = __dirname + '/data_outside'
+    const movedFile = __dirname + '/data/file'
+    mkdirp.sync(outsideDir);
+    fs.writeFileSync(origOutsideFile, '.');
+    var w = new INotifyWait(__dirname + '/data', /*{ watchDirectory: true }*/);
+    w.on('ready', function () {
+      fs.renameSync(origOutsideFile, movedFile)
+    });
+    w.on('add', function (name, stats) {
+      expect(name).to.eql(movedFile);
+      expect(stats.isDir).to.eql(false);
+      fs.renameSync(movedFile, origOutsideFile)
+    });
+    w.on('unlink', function (name, stats) {
+      expect(name).to.eql(movedFile);
+      expect(stats.isDir).to.eql(false);
+      w.close();
+      remove.removeSync(outsideDir);
+      done();
+    });
+    
+  })
+  it('should detect when a directory is moved from watched directory to outside and then back @34', function (done) {
+    const origDir = __dirname + '/data/subdir'
+    const outsideDir = __dirname + '/data_outside'
+    const movedOutsideDir = __dirname + '/data_outside/subdir'
+    mkdirp.sync(origDir);
+    mkdirp.sync(outsideDir);
+    var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
+    w.on('ready', function () {
+      fs.renameSync(origDir, movedOutsideDir)
+    });
+    w.on('unlink', function (name, stats) {
+      expect(name).to.eql(origDir);
+      expect(stats.isDir).to.eql(true);
+      fs.renameSync(movedOutsideDir, origDir)
+    });
+    w.on('add', function (name, stats) {
+      expect(name).to.eql(origDir);
+      expect(stats.isDir).to.eql(true);
+      w.close();
+      remove.removeSync(outsideDir);
+      done();
+    });
+  })
+  it('should detect when a directory is moved from outside to watched directory and then back @35', function (done) {
+    const origOutsideDir = __dirname + '/data_outside/subdir'
+    const outsideDir = __dirname + '/data_outside'
+    const movedDir = __dirname + '/data/subdir'
+    mkdirp.sync(outsideDir);
+    mkdirp.sync(origOutsideDir);
+    var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
+    w.on('ready', function () {
+      fs.renameSync(origOutsideDir, movedDir)
+    });
+    w.on('add', function (name, stats) {
+      expect(name).to.eql(movedDir);
+      expect(stats.isDir).to.eql(true);
+      fs.renameSync(movedDir, origOutsideDir)
+    });
+    w.on('unlink', function (name, stats) {
+      expect(name).to.eql(movedDir);
+      expect(stats.isDir).to.eql(true);
+      w.close();
+      remove.removeSync(outsideDir);
+      done();
+    });
+  })
+  
+  
+  
 });
 
 afterEach(function(){
