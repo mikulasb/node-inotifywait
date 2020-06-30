@@ -666,6 +666,35 @@ describe('inotifywait', function () {
     });
   })
   
+  it.only('should detect when a file is renamed and then renamed again to original name @36', function (done) {
+    const origFile = __dirname + '/data/file'
+    const renamedFile = __dirname + '/data/file2'
+    fs.writeFileSync(origFile, '.');
+    let move_num = 0;
+    var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
+    w.on('ready', function () {
+      fs.renameSync(origFile, renamedFile)
+    });
+    w.on('move', function (oldName, newName, stats) {
+      if(move_num === 0) {
+        expect(oldName).to.eql(origFile);
+        expect(newName).to.eql(renamedFile);
+        expect(stats.isDir).to.eql(false);
+        move_num = 1;
+        setTimeout(() => {
+        fs.renameSync(renamedFile, origFile);
+          return;
+        }, 10)
+      } else if(move_num === 1) {
+        expect(oldName).to.eql(renamedFile);
+        expect(newName).to.eql(origFile);
+        expect(stats.isDir).to.eql(false);
+        w.close();
+        remove.removeSync(origFile);
+        done();
+      }      
+    });   
+  })
   
   
 });
