@@ -666,7 +666,7 @@ describe('inotifywait', function () {
     });
   })
   
-  it.only('should detect when a file is renamed and then renamed again to original name @36', function (done) {
+  it('should detect when a file is renamed and then renamed again to original name @36', function (done) {
     const origFile = __dirname + '/data/file'
     const renamedFile = __dirname + '/data/file2'
     fs.writeFileSync(origFile, '.');
@@ -695,7 +695,35 @@ describe('inotifywait', function () {
       }      
     });   
   })
-  
+  it('should detect when a directory is renamed and then renamed again to original name @37', function (done) {
+    const origDir = __dirname + '/data/subdir'
+    const renamedDir = __dirname + '/data/subdir2'
+    mkdirp.sync(origDir);
+    let move_num = 0;
+    var w = new INotifyWait(__dirname + '/data', { watchDirectory: true });
+    w.on('ready', function () {
+      fs.renameSync(origDir, renamedDir)
+    });
+    w.on('move', function (oldName, newName, stats) {
+      if(move_num === 0) {
+        expect(oldName).to.eql(origDir);
+        expect(newName).to.eql(renamedDir);
+        expect(stats.isDir).to.eql(true);
+        move_num = 1;
+        setTimeout(() => {
+        fs.renameSync(renamedDir, origDir);
+          return;
+        }, 10)
+      } else if(move_num === 1) {
+        expect(oldName).to.eql(renamedDir);
+        expect(newName).to.eql(origDir);
+        expect(stats.isDir).to.eql(true);
+        w.close();
+        remove.removeSync(origDir);
+        done();
+      }      
+    });   
+  })
   
 });
 
